@@ -331,8 +331,30 @@ class DownloadApp(tk.Tk):
             if completed.returncode != 0:
                 overall_status = "error"
                 self.events.put(("log", f"Transkription fehlgeschlagen: {video.name}"))
+                hint = self._build_whisper_fix_hint(whisper, output)
+                if hint:
+                    self.events.put(("log", hint))
 
         return overall_status
+
+    def _build_whisper_fix_hint(self, whisper: str, output: str) -> str | None:
+        if "ModuleNotFoundError: No module named 'typing_extensions'" not in output:
+            return None
+
+        whisper_path = Path(whisper)
+        python_path = whisper_path.parent.parent / "python.exe"
+        if python_path.exists():
+            return (
+                "Whisper-Umgebung unvollstaendig. Reparatur in PowerShell:\n"
+                f'& "{python_path}" -m pip install -U typing_extensions\n'
+                f'& "{python_path}" -m pip install -r requirements-transcription.txt'
+            )
+
+        return (
+            "Whisper-Umgebung unvollstaendig. Reparatur in PowerShell:\n"
+            "py -m pip install -U typing_extensions\n"
+            "py -m pip install -r requirements-transcription.txt"
+        )
 
     def _extract_tiktok_video_id(self, url: str) -> str | None:
         parsed = urlparse(url)
