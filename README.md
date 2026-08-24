@@ -2,9 +2,13 @@
 
 Kleine Desktop-App zum lokalen Sichern von TikTok-Videos, einzeln oder als Batchliste.
 
+Aktuelle Version: `1.0.0`
+
 ## Funktionen
 
 - Desktop-Oberflaeche mit Tkinter
+- Umschaltbares helles/dunkles Theme
+- sichtbare Versionsnummer in der App
 - Einzel- und Batchdownload von TikTok-URLs
 - Zielordner frei waehlbar
 - optional Metadaten-JSON und Thumbnails
@@ -122,3 +126,14 @@ Lange TikTok-Links mit Tracking-Parametern werden automatisch auf die Videoseite
 ## Rechtlicher Hinweis
 
 Dieses Tool laedt nur Inhalte ueber die von `yt-dlp` unterstuetzten Quellen herunter. Es umgeht keine Zugangsbeschraenkungen und ersetzt keine rechtliche Beratung. Beachte Urheberrecht, Plattformbedingungen, Datenschutz und Strafrecht.
+
+## Release
+
+Dieses Repository ist fuer eine oeffentliche Veroeffentlichung vorbereitet:
+
+- MIT-Lizenz
+- Security Policy
+- Changelog
+- Contribution-Hinweise
+- GitHub Actions Syntaxcheck
+- getrennte Requirements fuer Basisbetrieb und optionale Transkription
