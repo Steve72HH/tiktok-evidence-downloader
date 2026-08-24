@@ -211,7 +211,7 @@ class DownloadApp(tk.Tk):
                         self.events.put(("log", f"Fehlerdetails gespeichert in: {error_log_path}"))
                     transcript_status = "not_requested"
                     if status == "ok" and transcribe and whisper is not None:
-                        transcript_status = self._transcribe_new_videos(whisper, target, started_local)
+                        transcript_status = self._transcribe_videos_for_url(whisper, target, url, started_local, output)
                     writer.writerow([started, status, url, completed.returncode, transcript_status])
                     fh.flush()
                     self.events.put(("log", f"Status: {status}"))
@@ -277,8 +277,22 @@ class DownloadApp(tk.Tk):
             fh.write(output or "<no output>")
             fh.write("\n")
 
-    def _transcribe_new_videos(self, whisper: str, target: Path, started_local: dt.datetime) -> str:
+    def _transcribe_videos_for_url(
+        self,
+        whisper: str,
+        target: Path,
+        url: str,
+        started_local: dt.datetime,
+        ytdlp_output: str,
+    ) -> str:
         video_files = self._find_new_video_files(target, started_local)
+        if not video_files and "has already been recorded in the archive" in ytdlp_output:
+            video_id = self._extract_tiktok_video_id(url)
+            if video_id:
+                video_files = self._find_existing_video_files(target, video_id)
+                if video_files:
+                    self.events.put(("log", f"Transkription: verwende bereits vorhandene Videodatei fuer ID {video_id}."))
+
         if not video_files:
             self.events.put(("log", "Transkription: keine neue Videodatei gefunden."))
             return "no_video_found"
@@ -319,6 +333,27 @@ class DownloadApp(tk.Tk):
                 self.events.put(("log", f"Transkription fehlgeschlagen: {video.name}"))
 
         return overall_status
+
+    def _extract_tiktok_video_id(self, url: str) -> str | None:
+        parsed = urlparse(url)
+        parts = [part for part in parsed.path.split("/") if part]
+        if "video" not in parts:
+            return None
+        video_index = parts.index("video") + 1
+        if video_index >= len(parts):
+            return None
+        video_id = parts[video_index]
+        return video_id if video_id.isdigit() else None
+
+    def _find_existing_video_files(self, target: Path, video_id: str) -> list[Path]:
+        suffixes = {".mp4", ".webm", ".mkv", ".mov", ".m4v"}
+        results: list[Path] = []
+        for path in target.iterdir():
+            if not path.is_file() or path.suffix.lower() not in suffixes:
+                continue
+            if video_id in path.name:
+                results.append(path)
+        return sorted(results, key=lambda item: item.stat().st_mtime, reverse=True)
 
     def _find_new_video_files(self, target: Path, started_local: dt.datetime) -> list[Path]:
         suffixes = {".mp4", ".webm", ".mkv", ".mov", ".m4v"}
