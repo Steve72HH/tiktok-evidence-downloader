@@ -1,0 +1,26 @@
+[project]
+name = "tiktok-evidence-downloader"
+version = "1.0.0"
+description = "Small Tkinter desktop app for saving TikTok videos locally with optional Whisper transcription."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Stephan Miebach" }
+]
+dependencies = [
+  "yt-dlp>=2026.1.1"
+]
+
+[project.optional-dependencies]
+transcription = [
+  "typing_extensions",
+  "openai-whisper"
+]
+
+[project.urls]
+Homepage = "https://github.com/Steve72HH/tiktok-evidence-downloader"
+Repository = "https://github.com/Steve72HH/tiktok-evidence-downloader"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
