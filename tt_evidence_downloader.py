@@ -21,15 +21,47 @@ from urllib.parse import parse_qs, urlparse, urlunparse
 
 
 APP_TITLE = "TikTok Evidence Downloader"
+APP_VERSION = "1.0.0"
+
+
+THEMES = {
+    "light": {
+        "window": "#f4f6f8",
+        "panel": "#ffffff",
+        "text": "#17202a",
+        "muted": "#4d5b6a",
+        "border": "#c8d0da",
+        "field": "#ffffff",
+        "field_text": "#111827",
+        "select": "#d8e8ff",
+        "button": "#e8edf3",
+        "button_active": "#dce5ef",
+        "accent": "#1f6feb",
+    },
+    "dark": {
+        "window": "#111827",
+        "panel": "#1f2937",
+        "text": "#f3f4f6",
+        "muted": "#cbd5e1",
+        "border": "#374151",
+        "field": "#0f172a",
+        "field_text": "#f8fafc",
+        "select": "#264365",
+        "button": "#374151",
+        "button_active": "#475569",
+        "accent": "#60a5fa",
+    },
+}
 
 
 class DownloadApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title(APP_TITLE)
+        self.title(f"{APP_TITLE} v{APP_VERSION}")
         self.geometry("900x680")
         self.minsize(760, 560)
 
+        self.theme_name = tk.StringVar(value="light")
         self.output_dir = tk.StringVar(value=str(Path.home() / "Downloads" / "tiktok-evidence"))
         self.save_metadata = tk.BooleanVar(value=True)
         self.write_thumbnails = tk.BooleanVar(value=True)
@@ -42,6 +74,7 @@ class DownloadApp(tk.Tk):
         self.events: queue.Queue[tuple[str, str]] = queue.Queue()
 
         self._build_ui()
+        self._apply_theme()
         self.after(100, self._poll_events)
 
     def _build_ui(self) -> None:
@@ -55,6 +88,20 @@ class DownloadApp(tk.Tk):
         ttk.Label(top, text="Zielordner").grid(row=0, column=0, sticky="w", padx=(0, 8))
         ttk.Entry(top, textvariable=self.output_dir).grid(row=0, column=1, sticky="ew")
         ttk.Button(top, text="Auswaehlen", command=self._choose_folder).grid(row=0, column=2, padx=(8, 0))
+
+        header = ttk.Frame(top)
+        header.grid(row=0, column=3, sticky="e", padx=(12, 0))
+        ttk.Label(header, text=f"v{APP_VERSION}").grid(row=0, column=0, padx=(0, 8))
+        ttk.Label(header, text="Theme").grid(row=0, column=1, padx=(0, 6))
+        theme_select = ttk.Combobox(
+            header,
+            textvariable=self.theme_name,
+            values=("light", "dark"),
+            width=8,
+            state="readonly",
+        )
+        theme_select.grid(row=0, column=2)
+        theme_select.bind("<<ComboboxSelected>>", lambda _event: self._apply_theme())
 
         options = ttk.Frame(top)
         options.grid(row=1, column=0, columnspan=3, sticky="w", pady=(10, 0))
@@ -118,6 +165,49 @@ class DownloadApp(tk.Tk):
         self.progress.grid(row=0, column=0, sticky="ew", padx=(0, 12))
         self.start_button = ttk.Button(bottom, text="Download starten", command=self._start_downloads)
         self.start_button.grid(row=0, column=1)
+
+    def _apply_theme(self) -> None:
+        colors = THEMES[self.theme_name.get()]
+        self.configure(bg=colors["window"])
+
+        style = ttk.Style(self)
+        try:
+            style.theme_use("clam")
+        except tk.TclError:
+            pass
+
+        style.configure(".", background=colors["window"], foreground=colors["text"], fieldbackground=colors["field"])
+        style.configure("TFrame", background=colors["window"])
+        style.configure("TLabelframe", background=colors["window"], foreground=colors["text"], bordercolor=colors["border"])
+        style.configure("TLabelframe.Label", background=colors["window"], foreground=colors["text"])
+        style.configure("TLabel", background=colors["window"], foreground=colors["text"])
+        style.configure("TCheckbutton", background=colors["window"], foreground=colors["text"])
+        style.configure("TButton", background=colors["button"], foreground=colors["text"], bordercolor=colors["border"])
+        style.map("TButton", background=[("active", colors["button_active"])])
+        style.configure("TEntry", fieldbackground=colors["field"], foreground=colors["field_text"], insertcolor=colors["field_text"])
+        style.configure("TCombobox", fieldbackground=colors["field"], foreground=colors["field_text"], arrowcolor=colors["text"])
+        style.map(
+            "TCombobox",
+            fieldbackground=[("readonly", colors["field"])],
+            foreground=[("readonly", colors["field_text"])],
+            selectbackground=[("readonly", colors["select"])],
+            selectforeground=[("readonly", colors["field_text"])],
+        )
+        style.configure("Horizontal.TProgressbar", background=colors["accent"], troughcolor=colors["panel"])
+
+        self._theme_text_widget(self.urls, colors)
+        self._theme_text_widget(self.log, colors)
+
+    def _theme_text_widget(self, widget: tk.Text, colors: dict[str, str]) -> None:
+        widget.configure(
+            background=colors["field"],
+            foreground=colors["field_text"],
+            insertbackground=colors["field_text"],
+            selectbackground=colors["select"],
+            selectforeground=colors["field_text"],
+            highlightbackground=colors["border"],
+            highlightcolor=colors["accent"],
+        )
 
     def _choose_folder(self) -> None:
         selected = filedialog.askdirectory(initialdir=self.output_dir.get() or str(Path.home()))
