@@ -9,8 +9,11 @@ Kleine Desktop-App zum lokalen Sichern von TikTok-Videos, einzeln oder als Batch
 - Zielordner frei waehlbar
 - optional Metadaten-JSON und Thumbnails
 - optional lokale Transkription mit Whisper
+- optional TikTok-Cookies aus Chrome, Edge, Firefox, Brave, Opera oder Vivaldi
+- automatische Bereinigung langer TikTok-Tracking-URLs
 - Download-Archiv gegen doppelte Downloads
 - CSV-Protokoll fuer Nachvollziehbarkeit
+- separates `yt-dlp-error-log.txt` fuer Fehlerdetails
 
 ## Zweck
 
@@ -69,10 +72,27 @@ python3 ./tt_evidence_downloader.py
 2. Zielordner auswaehlen.
 3. Optional `Metadaten-JSON speichern` aktiviert lassen.
 4. Optional `Transkription mit Whisper` aktivieren und Modell waehlen.
-5. `Download starten` klicken.
+5. Falls TikTok ohne Cookies blockiert: bei `TikTok-Cookies` deinen Browser auswaehlen.
+6. `Download starten` klicken.
 
 Die App speichert Videos mit Zeitstempel und TikTok-ID im Dateinamen. Im Zielordner entsteht ausserdem `download-log.csv`.
 Transkripte werden im Unterordner `transcripts` als `.txt` gespeichert.
+Falls `yt-dlp` mit Fehler endet, schreibt die App Details nach `yt-dlp-error-log.txt`.
+
+## TikTok-Fehler beheben
+
+TikTok blockiert Downloads haeufiger ohne eingeloggte Browser-Sitzung. Vorgehen:
+
+1. TikTok im Browser oeffnen und einloggen.
+2. Browser in der App unter `TikTok-Cookies` auswaehlen.
+3. Falls Cookies nicht gelesen werden koennen, Browser komplett schliessen und erneut starten.
+4. `yt-dlp` aktualisieren:
+
+```powershell
+py -m pip install -U yt-dlp
+```
+
+Lange TikTok-Links mit Tracking-Parametern werden automatisch auf die Videoseite gekuerzt.
 
 ## Whisper-Modellwahl
 
