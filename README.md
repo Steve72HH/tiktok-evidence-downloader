@@ -1,5 +1,7 @@
 # TikTok Evidence Downloader
 
+![TikTok Evidence Downloader social preview](assets/github-social-preview.png)
+
 Kleine Desktop-App zum lokalen Sichern von TikTok-Videos, einzeln oder als Batchliste.
 
 Aktuelle Version: `1.0.0`
