@@ -1,0 +1,32 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+
+# Local evidence/download output
+download-log.csv
+download-archive.txt
+transcripts/
+*.mp4
+*.webm
+*.mkv
+*.mov
+*.m4v
+*.json
+*.jpg
+*.jpeg
+*.png
+*.webp
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
