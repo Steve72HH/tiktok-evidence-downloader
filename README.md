@@ -35,7 +35,7 @@ py -m pip install -r requirements.txt
 Optional mit Whisper-Transkription:
 
 ```powershell
-py -m pip install -U openai-whisper
+py -m pip install -r requirements-transcription.txt
 winget install Gyan.FFmpeg
 ```
 
@@ -48,7 +48,7 @@ python3 -m pip install -r requirements.txt
 Optional mit Whisper-Transkription:
 
 ```bash
-python3 -m pip install -U openai-whisper
+python3 -m pip install -r requirements-transcription.txt
 sudo apt install ffmpeg
 ```
 
@@ -78,6 +78,17 @@ python3 ./tt_evidence_downloader.py
 Die App speichert Videos mit Zeitstempel und TikTok-ID im Dateinamen. Im Zielordner entsteht ausserdem `download-log.csv`.
 Transkripte werden im Unterordner `transcripts` als `.txt` gespeichert.
 Falls `yt-dlp` mit Fehler endet, schreibt die App Details nach `yt-dlp-error-log.txt`.
+Wenn ein Video bereits im Download-Archiv steht, versucht die App fuer die Transkription die passende vorhandene Videodatei anhand der TikTok-ID zu finden.
+
+## Whisper-Fehler beheben
+
+Wenn im Protokoll `ModuleNotFoundError: No module named 'typing_extensions'` steht:
+
+```powershell
+py -m pip install -U typing_extensions
+```
+
+Danach kannst du denselben TikTok-Link erneut starten. Wenn `Bereits geladene URLs ueberspringen` aktiv ist, wird das Video nicht neu geladen, aber die App transkribiert die bereits vorhandene MP4 anhand der TikTok-ID.
 
 ## TikTok-Fehler beheben
 
