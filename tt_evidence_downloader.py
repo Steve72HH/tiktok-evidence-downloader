@@ -17,6 +17,7 @@ import threading
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
+from urllib.parse import parse_qs, urlparse, urlunparse
 
 
 APP_TITLE = "TikTok Evidence Downloader"
@@ -35,6 +36,7 @@ class DownloadApp(tk.Tk):
         self.download_archive = tk.BooleanVar(value=True)
         self.transcribe_audio = tk.BooleanVar(value=False)
         self.whisper_model = tk.StringVar(value="small")
+        self.cookie_source = tk.StringVar(value="none")
         self.running = False
         self.worker: threading.Thread | None = None
         self.events: queue.Queue[tuple[str, str]] = queue.Queue()
@@ -72,6 +74,19 @@ class DownloadApp(tk.Tk):
             state="readonly",
         )
         model_select.grid(row=0, column=2)
+
+        cookie_options = ttk.Frame(top)
+        cookie_options.grid(row=3, column=0, columnspan=3, sticky="w", pady=(10, 0))
+        ttk.Label(cookie_options, text="TikTok-Cookies").grid(row=0, column=0, padx=(0, 6))
+        cookie_select = ttk.Combobox(
+            cookie_options,
+            textvariable=self.cookie_source,
+            values=("none", "chrome", "edge", "firefox", "brave", "opera", "vivaldi"),
+            width=12,
+            state="readonly",
+        )
+        cookie_select.grid(row=0, column=1, padx=(0, 12))
+        ttk.Label(cookie_options, text="Browser vorher schliessen, wenn Cookies nicht gelesen werden koennen.").grid(row=0, column=2)
 
         body = ttk.PanedWindow(self, orient=tk.VERTICAL)
         body.grid(row=1, column=0, sticky="nsew", padx=12, pady=(0, 12))
@@ -157,6 +172,7 @@ class DownloadApp(tk.Tk):
             value = line.strip()
             if not value or value.startswith("#"):
                 continue
+            value = self._normalize_url(value)
             if value not in seen:
                 urls.append(value)
                 seen.add(value)
@@ -164,6 +180,7 @@ class DownloadApp(tk.Tk):
 
     def _download_worker(self, yt_dlp: str, whisper: str | None, urls: list[str], target: Path) -> None:
         log_path = target / "download-log.csv"
+        error_log_path = target / "yt-dlp-error-log.txt"
         archive_path = target / "download-archive.txt"
         transcribe = self.transcribe_audio.get()
 
@@ -189,6 +206,9 @@ class DownloadApp(tk.Tk):
                     if output:
                         self.events.put(("log", output))
                     status = "ok" if completed.returncode == 0 else "error"
+                    if status == "error":
+                        self._write_error_log(error_log_path, started, url, completed.returncode, output)
+                        self.events.put(("log", f"Fehlerdetails gespeichert in: {error_log_path}"))
                     transcript_status = "not_requested"
                     if status == "ok" and transcribe and whisper is not None:
                         transcript_status = self._transcribe_new_videos(whisper, target, started_local)
@@ -210,9 +230,16 @@ class DownloadApp(tk.Tk):
             "--no-playlist",
             "--restrict-filenames",
             "--windows-filenames",
+            "--force-ipv4",
+            "--user-agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36",
             "--output",
             output_template,
         ]
+
+        cookie_source = self.cookie_source.get()
+        if cookie_source != "none":
+            command.extend(["--cookies-from-browser", cookie_source])
 
         if self.save_metadata.get():
             command.append("--write-info-json")
@@ -223,6 +250,32 @@ class DownloadApp(tk.Tk):
 
         command.append(url)
         return command
+
+    def _normalize_url(self, url: str) -> str:
+        parsed = urlparse(url)
+        if not parsed.scheme or not parsed.netloc:
+            return url
+
+        query = parse_qs(parsed.query)
+        keep_keys = ("is_from_webapp", "sender_device")
+        cleaned_query = []
+        for key in keep_keys:
+            if key in query:
+                cleaned_query.append(f"{key}={query[key][0]}")
+
+        if "tiktok.com" in parsed.netloc.lower() and "/video/" in parsed.path:
+            return urlunparse((parsed.scheme, parsed.netloc, parsed.path, "", "&".join(cleaned_query), ""))
+        return url
+
+    def _write_error_log(self, error_log_path: Path, started: str, url: str, return_code: int, output: str) -> None:
+        with error_log_path.open("a", encoding="utf-8") as fh:
+            fh.write("=" * 80 + "\n")
+            fh.write(f"timestamp_utc: {started}\n")
+            fh.write(f"url: {url}\n")
+            fh.write(f"return_code: {return_code}\n")
+            fh.write("-" * 80 + "\n")
+            fh.write(output or "<no output>")
+            fh.write("\n")
 
     def _transcribe_new_videos(self, whisper: str, target: Path, started_local: dt.datetime) -> str:
         video_files = self._find_new_video_files(target, started_local)
